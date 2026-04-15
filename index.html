@@ -1,13 +1,483 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="扣子编程，你的 AI 开发伙伴已就位" />
-    <title>扣子编程 - AI 开发伙伴</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/index.ts"></script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>智能记账 - AI 文字识别记账</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="pb-32">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+    <!-- Header -->
+    <header class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-1">智能记账</h1>
+      <p class="text-gray-500 text-sm">AI 智能分析，自动识别分类</p>
+    </header>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <i class="fas fa-calendar-day text-indigo-600 text-sm"></i>
+          </div>
+          <span class="text-xs text-gray-500">今日支出</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-800" id="todayTotal">¥0.00</div>
+      </div>
+      <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+            <i class="fas fa-calendar-alt text-emerald-600 text-sm"></i>
+          </div>
+          <span class="text-xs text-gray-500">本月支出</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-800" id="monthTotal">¥0.00</div>
+      </div>
+    </div>
+    
+    <!-- Input Section -->
+    <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-6 text-white mb-6">
+      <h3 class="font-semibold mb-3 flex items-center gap-2">
+        <i class="fas fa-pen"></i>
+        输入记账内容
+      </h3>
+      <textarea id="billInput" rows="3" placeholder="例如：今天中午吃饭花了50块钱" 
+        class="w-full px-4 py-3 rounded-xl text-gray-800 text-base resize-none outline-none focus:ring-2 focus:ring-white/50 transition"></textarea>
+      <div class="flex flex-wrap gap-2 mt-3">
+        <span class="text-white/60 text-xs">快捷输入：</span>
+        <button onclick="fillExample('今天中午吃饭花了50块钱')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs transition">吃饭 50</button>
+        <button onclick="fillExample('打车去公司30元')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs transition">打车 30</button>
+        <button onclick="fillExample('网购衣服花了200块')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs transition">购物 200</button>
+        <button onclick="fillExample('买电影票花了60')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs transition">娱乐 60</button>
+        <button onclick="fillExample('买水果花了25')" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full text-xs transition">其他 25</button>
+      </div>
+      <button id="submitBtn" onclick="submitBill()" class="w-full mt-4 bg-white text-indigo-600 py-3 rounded-xl font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2">
+        <i class="fas fa-magic"></i>
+        AI 智能记账
+      </button>
+    </div>
+    
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="hidden mb-6">
+      <div class="bg-white rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-center gap-3">
+          <div class="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
+          <span class="text-gray-600">AI 正在分析中...</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Preview Section -->
+    <div id="previewSection" class="bg-white rounded-2xl p-5 shadow-sm mb-6 hidden">
+      <h3 class="text-sm font-semibold text-gray-700 mb-4">
+        <i class="fas fa-check-circle text-green-500 mr-2"></i>AI 识别结果
+      </h3>
+      
+      <div class="text-center mb-5">
+        <span class="text-gray-500 text-sm">识别金额</span>
+        <div class="text-4xl font-bold text-gray-800" id="previewAmount">¥0.00</div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="text-xs text-gray-500 mb-2 block">消费分类</label>
+          <select id="editType" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 outline-none transition">
+            <option value="dining">🍽️ 餐饮</option>
+            <option value="transport">🚗 交通</option>
+            <option value="shopping">🛍️ 购物</option>
+            <option value="entertainment">🎮 娱乐</option>
+            <option value="medical">🏥 医疗</option>
+            <option value="housing">🏠 住房</option>
+            <option value="social">❤️ 人情</option>
+            <option value="other">📦 其他</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs text-gray-500 mb-2 block">消费日期</label>
+          <input type="date" id="editDate" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 outline-none transition">
+        </div>
+      </div>
+      
+      <div class="mb-5">
+        <label class="text-xs text-gray-500 mb-2 block">备注说明</label>
+        <input type="text" id="editNote" placeholder="可填写备注" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-400 outline-none transition">
+      </div>
+      
+      <div class="flex gap-3">
+        <button onclick="cancelEdit()" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition">
+          取消
+        </button>
+        <button onclick="confirmSave()" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition">
+          <i class="fas fa-check mr-2"></i>确认保存
+        </button>
+      </div>
+    </div>
+    
+    <!-- Category Stats -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm mb-6" id="categoryStats">
+      <h3 class="text-sm font-semibold text-gray-700 mb-4">📊 分类统计</h3>
+      <div id="categoryList" class="space-y-3">
+        <!-- 动态生成 -->
+      </div>
+    </div>
+    
+    <!-- Bill List -->
+    <div class="mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">📝 账单记录</h3>
+        <span class="text-xs text-gray-400" id="billCount">0 条</span>
+      </div>
+      <div id="billList" class="space-y-2">
+        <!-- 动态生成 -->
+      </div>
+      <div id="emptyState" class="bg-white rounded-2xl p-12 text-center hidden">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+          <i class="fas fa-receipt text-gray-300 text-2xl"></i>
+        </div>
+        <p class="text-gray-400 text-sm">暂无记账记录</p>
+        <p class="text-gray-300 text-xs mt-1">在上方输入记账内容开始记录</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-black/80 text-white px-6 py-3 rounded-full text-sm opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+    <span id="toastText"></span>
+  </div>
+
+  <style>
+    body {
+      background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 50%, #F0FDF4 100%);
+      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    .category-dining { background: #FEF3C7; }
+    .category-transport { background: #DBEAFE; }
+    .category-shopping { background: #FCE7F3; }
+    .category-entertainment { background: #E9D5FF; }
+    .category-medical { background: #FEE2E2; }
+    .category-housing { background: #D1FAE5; }
+    .category-social { background: #FFEDD5; }
+    .category-other { background: #F3F4F6; }
+    
+    .type-dining { background: #FEF3C7; color: #D97706; }
+    .type-transport { background: #DBEAFE; color: #2563EB; }
+    .type-shopping { background: #FCE7F3; color: #DB2777; }
+    .type-entertainment { background: #E9D5FF; color: #9333EA; }
+    .type-medical { background: #FEE2E2; color: #DC2626; }
+    .type-housing { background: #D1FAE5; color: #059669; }
+    .type-social { background: #FFEDD5; color: #EA580C; }
+    .type-other { background: #F3F4F6; color: #6B7280; }
+    
+    .chart-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #4F46E5 0%, #818CF8 100%);
+      transition: width 0.5s ease;
+    }
+    
+    .toast-show {
+      opacity: 1 !important;
+    }
+  </style>
+
+  <script>
+    // 分类配置
+    const CATEGORIES = {
+      dining: { name: '餐饮', icon: 'fa-utensils' },
+      transport: { name: '交通', icon: 'fa-car' },
+      shopping: { name: '购物', icon: 'fa-shopping-bag' },
+      entertainment: { name: '娱乐', icon: 'fa-gamepad' },
+      medical: { name: '医疗', icon: 'fa-hospital' },
+      housing: { name: '住房', icon: 'fa-home' },
+      social: { name: '人情', icon: 'fa-heart' },
+      other: { name: '其他', icon: 'fa-ellipsis-h' }
+    };
+
+    // 全局变量
+    let bills = [];
+    let currentBill = null;
+
+    // DOM 元素
+    const billInput = document.getElementById('billInput');
+    const previewSection = document.getElementById('previewSection');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const toast = document.getElementById('toast');
+    const toastText = document.getElementById('toastText');
+
+    // 初始化
+    function init() {
+      loadBills();
+      renderBillList();
+      updateStats();
+      
+      // 设置默认日期为今天
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('editDate').value = today;
+      
+      // 回车提交
+      billInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          submitBill();
+        }
+      });
+    }
+
+    // 加载账单
+    function loadBills() {
+      try {
+        const stored = localStorage.getItem('smartBills');
+        bills = stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        bills = [];
+      }
+    }
+
+    // 保存账单
+    function saveBills() {
+      localStorage.setItem('smartBills', JSON.stringify(bills));
+    }
+
+    // 提交记账
+    async function submitBill() {
+      const text = billInput.value.trim();
+      if (!text) {
+        showToast('请输入记账内容');
+        return;
+      }
+
+      // 显示加载状态
+      loadingIndicator.classList.remove('hidden');
+      previewSection.classList.add('hidden');
+      document.getElementById('submitBtn').disabled = true;
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'AI 分析失败');
+        }
+
+        // 显示预览
+        showPreview(result.data);
+      } catch (error) {
+        console.error('Error:', error);
+        showToast(error.message || 'AI 分析失败，请重试');
+      } finally {
+        loadingIndicator.classList.add('hidden');
+        document.getElementById('submitBtn').disabled = false;
+      }
+    }
+
+    // 显示预览
+    function showPreview(data) {
+      currentBill = {
+        id: Date.now(),
+        ...data,
+        createdAt: Date.now()
+      };
+
+      // 更新预览
+      document.getElementById('previewAmount').textContent = `¥${data.amount.toFixed(2)}`;
+      document.getElementById('editType').value = data.type;
+      document.getElementById('editDate').value = data.date;
+      document.getElementById('editNote').value = data.note || '';
+
+      // 显示预览区域
+      previewSection.classList.remove('hidden');
+      previewSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 取消编辑
+    function cancelEdit() {
+      previewSection.classList.add('hidden');
+      currentBill = null;
+    }
+
+    // 确认保存
+    function confirmSave() {
+      if (!currentBill) return;
+
+      // 更新用户修改的内容
+      currentBill.type = document.getElementById('editType').value;
+      currentBill.date = document.getElementById('editDate').value;
+      currentBill.note = document.getElementById('editNote').value.trim();
+      currentBill.amount = parseFloat(document.getElementById('previewAmount').textContent.replace('¥', ''));
+
+      // 保存
+      bills.unshift(currentBill);
+      saveBills();
+      renderBillList();
+      updateStats();
+
+      // 重置
+      billInput.value = '';
+      previewSection.classList.add('hidden');
+      currentBill = null;
+
+      // 设置默认日期为今天
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('editDate').value = today;
+
+      showToast('记账成功！');
+    }
+
+    // 删除账单
+    function deleteBill(id) {
+      bills = bills.filter(b => b.id !== id);
+      saveBills();
+      renderBillList();
+      updateStats();
+      showToast('已删除');
+    }
+
+    // 填充示例
+    function fillExample(text) {
+      billInput.value = text;
+      billInput.focus();
+    }
+
+    // 格式化日期
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      if (dateStr === today.toISOString().split('T')[0]) {
+        return '今天';
+      } else if (dateStr === yesterday.toISOString().split('T')[0]) {
+        return '昨天';
+      } else {
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
+      }
+    }
+
+    // 渲染账单列表
+    function renderBillList() {
+      const billList = document.getElementById('billList');
+      const emptyState = document.getElementById('emptyState');
+      const billCount = document.getElementById('billCount');
+
+      billCount.textContent = `${bills.length} 条`;
+
+      if (bills.length === 0) {
+        billList.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      billList.innerHTML = bills.map(bill => {
+        const category = CATEGORIES[bill.type];
+        return `
+          <div class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative group">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-xl category-${bill.type} flex items-center justify-center">
+                <i class="fas ${category.icon} text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="type-${bill.type} px-2.5 py-1 rounded-full text-xs font-medium">${category.name}</span>
+                  ${bill.note ? `<span class="text-xs text-gray-400 truncate max-w-[80px]">${bill.note}</span>` : ''}
+                </div>
+                <div class="text-xs text-gray-400 mt-1">${formatDate(bill.date)}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold text-gray-800">-¥${bill.amount.toFixed(2)}</div>
+              </div>
+            </div>
+            <button onclick="deleteBill(${bill.id})" class="absolute right-3 top-3 w-7 h-7 rounded-full bg-red-100 text-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-200">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新统计
+    function updateStats() {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+      let todayTotal = 0;
+      let monthTotal = 0;
+      const categoryStats = {};
+
+      Object.keys(CATEGORIES).forEach(type => {
+        categoryStats[type] = { amount: 0, count: 0 };
+      });
+
+      bills.forEach(bill => {
+        if (bill.createdAt >= todayStart) {
+          todayTotal += bill.amount;
+        }
+        if (bill.createdAt >= monthStart) {
+          monthTotal += bill.amount;
+        }
+        if (categoryStats[bill.type]) {
+          categoryStats[bill.type].amount += bill.amount;
+          categoryStats[bill.type].count++;
+        }
+      });
+
+      document.getElementById('todayTotal').textContent = `¥${todayTotal.toFixed(2)}`;
+      document.getElementById('monthTotal').textContent = `¥${monthTotal.toFixed(2)}`;
+
+      // 渲染分类统计
+      const categoryList = document.getElementById('categoryList');
+      const maxAmount = Math.max(...Object.values(categoryStats).map(s => s.amount), 1);
+
+      const categoriesHtml = Object.entries(categoryStats)
+        .filter(([_, stats]) => stats.count > 0)
+        .sort((a, b) => b[1].amount - a[1].amount)
+        .map(([type, stats]) => {
+          const category = CATEGORIES[type];
+          const percentage = (stats.amount / maxAmount * 100).toFixed(0);
+          return `
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg category-${type} flex items-center justify-center flex-shrink-0">
+                <i class="fas ${category.icon} text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1.5">
+                  <span class="text-gray-600 font-medium">${category.name}</span>
+                  <span class="text-gray-500">¥${stats.amount.toFixed(2)} (${stats.count}笔)</span>
+                </div>
+                <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="chart-bar" style="width: ${percentage}%"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+      categoryList.innerHTML = categoriesHtml || '<p class="text-gray-400 text-sm text-center py-4">暂无分类数据</p>';
+    }
+
+    // 显示提示
+    function showToast(message) {
+      toastText.textContent = message;
+      toast.classList.add('toast-show');
+      setTimeout(() => {
+        toast.classList.remove('toast-show');
+      }, 2500);
+    }
+
+    // 启动应用
+    init();
+  </script>
+</body>
 </html>

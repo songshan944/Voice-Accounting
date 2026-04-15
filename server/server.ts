@@ -4,6 +4,7 @@
 import { createServer, type Server } from 'http';
 import express from 'express';
 import router from './routes/index';
+import analyzeRouter from './routes/analyze';
 import { setupVite } from './vite';
 
 const isDev = process.env.COZE_PROJECT_ENV !== 'PROD';
@@ -32,6 +33,7 @@ async function startServer(): Promise<Server> {
 
   // 注册 API 路由
   app.use(router);
+  app.use(analyzeRouter);
 
   // 集成 Vite（开发模式）或静态文件服务（生产模式）
   await setupVite(app);
