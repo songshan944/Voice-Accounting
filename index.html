@@ -1,33 +1,765 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="扣子编程，你的 AI 开发伙伴已就位" />
-    <title>扣子编程 - AI 开发伙伴</title>
-    <link rel="stylesheet" href="/styles/main.css" />
-  </head>
-  <body>
-    <div id="app">
-      <main class="main-wrapper">
-        <div class="content-container">
-          <img
-            src="https://lf-coze-web-cdn.coze.cn/obj/eden-cn/lm-lgvj/ljhwZthlaukjlkulzlp/coze-coding/icon/coze-coding.gif"
-            alt="扣子编程 Logo"
-            class="logo-image"
-          />
-          <div>
-            <div class="text-container">
-              <h1 class="heading">
-                应用开发中
-              </h1>
-              <p class="description">
-                请稍后，页面即将呈现
-              </p>
-            </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>语音记账 - 智能便捷记账</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    
+    :root {
+      --primary: #4F46E5;
+      --primary-light: #818CF8;
+      --success: #10B981;
+      --danger: #EF4444;
+      --warning: #F59E0B;
+      --bg-light: #F8FAFC;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    }
+    
+    body {
+      background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 50%, #F0FDF4 100%);
+      min-height: 100vh;
+    }
+    
+    .mic-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      box-shadow: 0 10px 40px -10px rgba(79, 70, 229, 0.5);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .mic-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .mic-btn:hover::before {
+      opacity: 1;
+    }
+    
+    .mic-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 15px 50px -10px rgba(79, 70, 229, 0.6);
+    }
+    
+    .mic-btn.recording {
+      animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      background: linear-gradient(135deg, var(--danger) 0%, #F87171 100%);
+      box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.5);
+    }
+    
+    @keyframes pulse-ring {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.5);
+      }
+      50% {
+        transform: scale(1.08);
+        box-shadow: 0 15px 50px -5px rgba(239, 68, 68, 0.6);
+      }
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .bill-item {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s;
+    }
+    
+    .bill-item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .category-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    
+    .category-dining { background: #FEF3C7; color: #D97706; }
+    .category-transport { background: #DBEAFE; color: #2563EB; }
+    .category-shopping { background: #FCE7F3; color: #DB2777; }
+    .category-entertainment { background: #E9D5FF; color: #9333EA; }
+    .category-medical { background: #FEE2E2; color: #DC2626; }
+    .category-housing { background: #D1FAE5; color: #059669; }
+    .category-social { background: #FFEDD5; color: #EA580C; }
+    .category-other { background: #F3F4F6; color: #6B7280; }
+    
+    .confirm-panel {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.1);
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .confirm-panel.show {
+      transform: translateY(0);
+    }
+    
+    .type-tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    
+    .type-dining { background: #FEF3C7; color: #D97706; }
+    .type-transport { background: #DBEAFE; color: #2563EB; }
+    .type-shopping { background: #FCE7F3; color: #DB2777; }
+    .type-entertainment { background: #E9D5FF; color: #9333EA; }
+    .type-medical { background: #FEE2E2; color: #DC2626; }
+    .type-housing { background: #D1FAE5; color: #059669; }
+    .type-social { background: #FFEDD5; color: #EA580C; }
+    .type-other { background: #F3F4F6; color: #6B7280; }
+    
+    .chart-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 14px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 1000;
+    }
+    
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    
+    .delete-btn {
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .bill-item:hover .delete-btn {
+      opacity: 1;
+    }
+    
+    @media (max-width: 640px) {
+      .stat-card {
+        padding: 16px;
+      }
+      .mic-btn {
+        width: 72px;
+        height: 72px;
+      }
+    }
+    
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="pb-32">
+  <div class="max-w-2xl mx-auto px-4 py-6">
+    <!-- Header -->
+    <header class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-1">语音记账</h1>
+      <p class="text-gray-500 text-sm">说出金额，一键记账</p>
+    </header>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="stat-card p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <i class="fas fa-calendar-day text-indigo-600 text-sm"></i>
+          </div>
+          <span class="text-xs text-gray-500">今日支出</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-800" id="todayTotal">¥0.00</div>
+      </div>
+      <div class="stat-card p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+            <i class="fas fa-calendar-alt text-emerald-600 text-sm"></i>
+          </div>
+          <span class="text-xs text-gray-500">本月支出</span>
+        </div>
+        <div class="text-2xl font-bold text-gray-800" id="monthTotal">¥0.00</div>
+      </div>
+    </div>
+    
+    <!-- Voice Input Section -->
+    <div class="text-center mb-8">
+      <button id="micBtn" class="mic-btn focus:outline-none focus:ring-4 focus:ring-indigo-200">
+        <i class="fas fa-microphone text-white text-3xl" id="micIcon"></i>
+      </button>
+      <p class="mt-4 text-gray-500 text-sm" id="statusText">点击麦克风开始说话</p>
+    </div>
+    
+    <!-- Category Stats -->
+    <div class="stat-card p-4 mb-6" id="categoryStats">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">分类统计</h3>
+      <div id="categoryList" class="space-y-3">
+        <!-- 动态生成 -->
+      </div>
+    </div>
+    
+    <!-- Bill List -->
+    <div class="mb-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-700">最近记录</h3>
+        <span class="text-xs text-gray-400" id="billCount">0 条</span>
+      </div>
+      <div id="billList" class="space-y-2">
+        <!-- 动态生成 -->
+      </div>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+          <i class="fas fa-receipt text-gray-300 text-2xl"></i>
+        </div>
+        <p class="text-gray-400 text-sm">暂无记账记录</p>
+        <p class="text-gray-300 text-xs mt-1">点击麦克风开始记录你的第一笔支出</p>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Confirm Panel -->
+  <div id="confirmPanel" class="confirm-panel fixed bottom-0 left-0 right-0 p-5 max-w-2xl mx-auto">
+    <div class="text-center mb-4">
+      <div class="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4"></div>
+      <h3 class="text-lg font-semibold text-gray-800">确认记账信息</h3>
+    </div>
+    
+    <div class="bg-gray-50 rounded-2xl p-4 mb-4">
+      <div class="text-center mb-4">
+        <span class="text-gray-500 text-sm">金额</span>
+        <div class="text-4xl font-bold text-gray-800" id="confirmAmount">¥0.00</div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <span class="text-gray-500 text-xs">类型</span>
+          <div class="flex items-center gap-2 mt-1">
+            <div id="confirmIcon" class="category-icon"></div>
+            <span id="confirmType" class="font-medium text-gray-700"></span>
           </div>
         </div>
-      </main>
+        <div>
+          <span class="text-gray-500 text-xs">日期</span>
+          <p id="confirmDate" class="font-medium text-gray-700 mt-1"></p>
+        </div>
+      </div>
+      
+      <div id="confirmNoteContainer" class="mt-3 pt-3 border-t border-gray-200">
+        <span class="text-gray-500 text-xs">备注</span>
+        <p id="confirmNote" class="text-gray-700 mt-1"></p>
+      </div>
     </div>
-  </body>
+    
+    <div class="flex gap-3">
+      <button id="cancelBtn" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-medium">
+        取消
+      </button>
+      <button id="saveBtn" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-medium">
+        确认保存
+      </button>
+    </div>
+  </div>
+  
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // 分类配置
+    const CATEGORIES = {
+      dining: { name: '餐饮', icon: 'fa-utensils', class: 'category-dining', color: '#D97706' },
+      transport: { name: '交通', icon: 'fa-car', class: 'category-transport', color: '#2563EB' },
+      shopping: { name: '购物', icon: 'fa-shopping-bag', class: 'category-shopping', color: '#DB2777' },
+      entertainment: { name: '娱乐', icon: 'fa-gamepad', class: 'category-entertainment', color: '#9333EA' },
+      medical: { name: '医疗', icon: 'fa-hospital', class: 'category-medical', color: '#DC2626' },
+      housing: { name: '住房', icon: 'fa-home', class: 'category-housing', color: '#059669' },
+      social: { name: '人情', icon: 'fa-heart', class: 'category-social', color: '#EA580C' },
+      other: { name: '其他', icon: 'fa-ellipsis-h', class: 'category-other', color: '#6B7280' }
+    };
+
+    // 分类关键词
+    const CATEGORY_KEYWORDS = {
+      dining: ['吃饭', '餐饮', '早餐', '午餐', '晚餐', '宵夜', '外卖', '奶茶', '咖啡', '饮料', '零食', '水果', '买菜', '超市', '食品'],
+      transport: ['交通', '打车', '地铁', '公交', '开车', '加油', '停车', '火车', '飞机', '高铁', '打车', '滴滴'],
+      shopping: ['购物', '买', '衣服', '鞋子', '包', '化妆品', '护肤', '日用品', '电器', '电子产品'],
+      entertainment: ['娱乐', '电影', '唱歌', '游戏', '旅游', '健身', '运动', '门票', '会员', '视频'],
+      medical: ['医疗', '医院', '药店', '买药', '看病', '检查', '牙医'],
+      housing: ['住房', '房租', '水电', '物业', '装修', '家具'],
+      social: ['人情', '红包', '送礼', '礼物', '请客', '聚餐', 'AA']
+    };
+
+    // 全局变量
+    let bills = [];
+    let recognition = null;
+    let isRecording = false;
+    let currentBill = null;
+
+    // DOM 元素
+    const micBtn = document.getElementById('micBtn');
+    const micIcon = document.getElementById('micIcon');
+    const statusText = document.getElementById('statusText');
+    const confirmPanel = document.getElementById('confirmPanel');
+    const toast = document.getElementById('toast');
+
+    // 初始化
+    function init() {
+      loadBills();
+      renderBillList();
+      updateStats();
+      initSpeechRecognition();
+      bindEvents();
+    }
+
+    // 加载账单
+    function loadBills() {
+      const stored = localStorage.getItem('voiceBills');
+      bills = stored ? JSON.parse(stored) : [];
+    }
+
+    // 保存账单
+    function saveBills() {
+      localStorage.setItem('voiceBills', JSON.stringify(bills));
+    }
+
+    // 初始化语音识别
+    function initSpeechRecognition() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.lang = 'zh-CN';
+
+        recognition.onstart = () => {
+          isRecording = true;
+          micBtn.classList.add('recording');
+          micIcon.className = 'fas fa-microphone-slash text-white text-3xl';
+          statusText.textContent = '正在聆听...';
+        };
+
+        recognition.onresult = (event) => {
+          const result = event.results[event.results.length - 1];
+          const transcript = result[0].transcript;
+          
+          if (result.isFinal) {
+            processTranscript(transcript);
+          } else {
+            statusText.textContent = `识别中: ${transcript}`;
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          stopRecording();
+          if (event.error === 'not-allowed') {
+            showToast('请允许麦克风权限');
+          } else if (event.error === 'no-speech') {
+            showToast('未检测到语音，请重试');
+          }
+        };
+
+        recognition.onend = () => {
+          stopRecording();
+        };
+      } else {
+        statusText.textContent = '当前浏览器不支持语音识别';
+        micBtn.disabled = true;
+        micBtn.classList.opacity = '0.5';
+      }
+    }
+
+    // 处理语音转文字
+    function processTranscript(text) {
+      statusText.textContent = '正在智能解析...';
+      
+      // 模拟 AI 解析延迟
+      setTimeout(() => {
+        const bill = parseBillText(text);
+        currentBill = bill;
+        showConfirmPanel(bill);
+        statusText.textContent = '点击麦克风开始说话';
+      }, 500);
+    }
+
+    // AI 智能解析
+    function parseBillText(text) {
+      const bill = {
+        id: Date.now(),
+        amount: 0,
+        type: 'other',
+        date: new Date().toISOString().split('T')[0],
+        note: '',
+        rawText: text,
+        createdAt: Date.now()
+      };
+
+      // 提取金额 - 匹配各种格式
+      const amountPatterns = [
+        /([0-9]+(?:点[0-9]+)?(?:块|元))(?!.*[0-9])/g,  // "100块"、"50元"
+        /([0-9]+(?:点[0-9]+)?(?:块|元))/g,
+        /¥\s*([0-9]+(?:\.[0-9]{1,2})?)/g,
+        /RMB\s*([0-9]+(?:\.[0-9]{1,2})?)/g,
+        /([0-9]+(?:\.[0-9]{1,2})?)\s*(?:块|元)/g,
+        /([0-9]+)\s*块/g,
+        /([0-9]+)\s*元/g
+      ];
+
+      for (const pattern of amountPatterns) {
+        const matches = text.match(pattern);
+        if (matches) {
+          const lastMatch = matches[matches.length - 1];
+          const numStr = lastMatch.replace(/[^0-9.]/g, '');
+          const amount = parseFloat(numStr);
+          if (amount > 0 && amount < 1000000) {
+            bill.amount = amount;
+            break;
+          }
+        }
+      }
+
+      // 特殊金额词组
+      if (bill.amount === 0) {
+        const specialAmounts = {
+          '一块': 1, '一块钱': 1, '十块': 10, '十块钱': 10,
+          '二十': 20, '二十块': 20, '三十': 30, '三十块': 30,
+          '五十': 50, '五十块': 50, '一百': 100, '一百块': 100,
+          '两百': 200, '两百块': 200, '五百': 500, '五百块': 500,
+          '一千': 1000, '一千块': 1000
+        };
+        for (const [word, value] of Object.entries(specialAmounts)) {
+          if (text.includes(word)) {
+            bill.amount = value;
+            break;
+          }
+        }
+      }
+
+      // 提取日期
+      if (text.includes('今天') || text.includes('今日')) {
+        bill.date = new Date().toISOString().split('T')[0];
+      } else if (text.includes('昨天') || text.includes('昨日')) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        bill.date = yesterday.toISOString().split('T')[0];
+      } else if (text.includes('前天') || text.includes('前日')) {
+        const dayBefore = new Date();
+        dayBefore.setDate(dayBefore.getDate() - 2);
+        bill.date = dayBefore.toISOString().split('T')[0];
+      } else {
+        // 尝试匹配具体日期
+        const dateMatch = text.match(/(?:([0-9]+)月)?([0-9]+)号?/);
+        if (dateMatch) {
+          const month = dateMatch[1] ? parseInt(dateMatch[1]) : new Date().getMonth() + 1;
+          const day = parseInt(dateMatch[2]);
+          const now = new Date();
+          let year = now.getFullYear();
+          if (month < now.getMonth() + 1 && month > now.getMonth() + 1) {
+            year = month > now.getMonth() + 1 ? year - 1 : year;
+          }
+          bill.date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+      }
+
+      // 提取分类
+      for (const [type, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+        for (const keyword of keywords) {
+          if (text.includes(keyword)) {
+            bill.type = type;
+            break;
+          }
+        }
+        if (bill.type !== 'other') break;
+      }
+
+      // 提取备注（去除金额、日期、分类后的剩余部分）
+      let note = text
+        .replace(/[0-9]+(?:点[0-9]+)?(?:块|元)/g, '')
+        .replace(/¥\s*[0-9]+(?:\.[0-9]{1,2})?/g, '')
+        .replace(/(今天|昨天|前天|[0-9]+月[0-9]+号?)/g, '')
+        .replace(/吃饭|交通|购物|娱乐|医疗|住房|人情|其他/g, '')
+        .trim();
+      
+      // 过滤掉纯数字
+      note = note.replace(/^[0-9\s]+$/g, '').trim();
+      if (note && note.length > 0) {
+        bill.note = note;
+      }
+
+      return bill;
+    }
+
+    // 停止录音
+    function stopRecording() {
+      isRecording = false;
+      micBtn.classList.remove('recording');
+      micIcon.className = 'fas fa-microphone text-white text-3xl';
+    }
+
+    // 显示确认面板
+    function showConfirmPanel(bill) {
+      const category = CATEGORIES[bill.type];
+      
+      document.getElementById('confirmAmount').textContent = `¥${bill.amount.toFixed(2)}`;
+      
+      const iconEl = document.getElementById('confirmIcon');
+      iconEl.className = `category-icon ${category.class}`;
+      iconEl.innerHTML = `<i class="fas ${category.icon}"></i>`;
+      
+      document.getElementById('confirmType').textContent = category.name;
+      document.getElementById('confirmDate').textContent = formatDate(bill.date);
+      
+      const noteContainer = document.getElementById('confirmNoteContainer');
+      const noteEl = document.getElementById('confirmNote');
+      if (bill.note) {
+        noteContainer.style.display = 'block';
+        noteEl.textContent = bill.note;
+      } else {
+        noteContainer.style.display = 'none';
+      }
+      
+      confirmPanel.classList.add('show');
+    }
+
+    // 隐藏确认面板
+    function hideConfirmPanel() {
+      confirmPanel.classList.remove('show');
+      currentBill = null;
+    }
+
+    // 保存账单
+    function saveBill() {
+      if (currentBill && currentBill.amount > 0) {
+        bills.unshift(currentBill);
+        saveBills();
+        renderBillList();
+        updateStats();
+        hideConfirmPanel();
+        showToast('记账成功！');
+      } else {
+        showToast('请先说清楚金额');
+      }
+    }
+
+    // 删除账单
+    function deleteBill(id) {
+      bills = bills.filter(b => b.id !== id);
+      saveBills();
+      renderBillList();
+      updateStats();
+      showToast('已删除');
+    }
+
+    // 格式化日期
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const today = new Date();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      if (dateStr === today.toISOString().split('T')[0]) {
+        return '今天';
+      } else if (dateStr === yesterday.toISOString().split('T')[0]) {
+        return '昨天';
+      } else {
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
+      }
+    }
+
+    // 渲染账单列表
+    function renderBillList() {
+      const billList = document.getElementById('billList');
+      const emptyState = document.getElementById('emptyState');
+      const billCount = document.getElementById('billCount');
+      
+      billCount.textContent = `${bills.length} 条`;
+      
+      if (bills.length === 0) {
+        billList.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      
+      emptyState.classList.add('hidden');
+      
+      billList.innerHTML = bills.slice(0, 20).map(bill => {
+        const category = CATEGORIES[bill.type];
+        return `
+          <div class="bill-item flex items-center gap-3 p-3 relative">
+            <div class="category-icon ${category.class}">
+              <i class="fas ${category.icon}"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="type-tag ${category.class}">${category.name}</span>
+                ${bill.note ? `<span class="text-xs text-gray-400 truncate max-w-[100px]">${bill.note}</span>` : ''}
+              </div>
+              <div class="text-xs text-gray-400 mt-1">${formatDate(bill.date)}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-semibold text-gray-800">-¥${bill.amount.toFixed(2)}</div>
+            </div>
+            <button onclick="deleteBill(${bill.id})" class="delete-btn absolute right-2 top-2 w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新统计
+    function updateStats() {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      
+      let todayTotal = 0;
+      let monthTotal = 0;
+      const categoryStats = {};
+      
+      // 初始化分类统计
+      Object.keys(CATEGORIES).forEach(type => {
+        categoryStats[type] = { amount: 0, count: 0 };
+      });
+      
+      bills.forEach(bill => {
+        if (bill.createdAt >= todayStart) {
+          todayTotal += bill.amount;
+        }
+        if (bill.createdAt >= monthStart) {
+          monthTotal += bill.amount;
+        }
+        if (categoryStats[bill.type]) {
+          categoryStats[bill.type].amount += bill.amount;
+          categoryStats[bill.type].count++;
+        }
+      });
+      
+      document.getElementById('todayTotal').textContent = `¥${todayTotal.toFixed(2)}`;
+      document.getElementById('monthTotal').textContent = `¥${monthTotal.toFixed(2)}`;
+      
+      // 渲染分类统计
+      const categoryList = document.getElementById('categoryList');
+      const maxAmount = Math.max(...Object.values(categoryStats).map(s => s.amount), 1);
+      
+      const categoriesHtml = Object.entries(categoryStats)
+        .filter(([_, stats]) => stats.count > 0)
+        .sort((a, b) => b[1].amount - a[1].amount)
+        .map(([type, stats]) => {
+          const category = CATEGORIES[type];
+          const percentage = (stats.amount / maxAmount * 100).toFixed(0);
+          return `
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg ${category.class} flex items-center justify-center flex-shrink-0">
+                <i class="fas ${category.icon} text-sm"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-gray-600">${category.name}</span>
+                  <span class="text-gray-500">¥${stats.amount.toFixed(2)} (${stats.count}笔)</span>
+                </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div class="chart-bar" style="width: ${percentage}%"></div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      
+      categoryList.innerHTML = categoriesHtml || '<p class="text-gray-400 text-sm text-center py-4">暂无分类数据</p>';
+    }
+
+    // 显示提示
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    // 绑定事件
+    function bindEvents() {
+      micBtn.addEventListener('click', () => {
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          if (recognition) {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.error('Recognition start error:', e);
+            }
+          } else {
+            showToast('当前浏览器不支持语音识别');
+          }
+        }
+      });
+      
+      document.getElementById('cancelBtn').addEventListener('click', hideConfirmPanel);
+      document.getElementById('saveBtn').addEventListener('click', saveBill);
+      
+      // 点击外部关闭确认面板
+      confirmPanel.addEventListener('click', (e) => {
+        if (e.target === confirmPanel) {
+          hideConfirmPanel();
+        }
+      });
+    }
+
+    // 启动应用
+    init();
+  </script>
+</body>
 </html>
