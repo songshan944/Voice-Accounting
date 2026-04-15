@@ -13,16 +13,6 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     
-    :root {
-      --primary: #4F46E5;
-      --primary-light: #818CF8;
-      --success: #10B981;
-      --danger: #EF4444;
-      --warning: #F59E0B;
-      --bg-light: #F8FAFC;
-      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    }
-    
     body {
       background: linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 50%, #F0FDF4 100%);
       min-height: 100vh;
@@ -32,24 +22,13 @@
       width: 80px;
       height: 80px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      background: linear-gradient(135deg, #4F46E5 0%, #818CF8 100%);
       box-shadow: 0 10px 40px -10px rgba(79, 70, 229, 0.5);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
-    }
-    
-    .mic-btn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, rgba(255,255,255,0.3) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    .mic-btn:hover::before {
-      opacity: 1;
+      border: none;
+      cursor: pointer;
     }
     
     .mic-btn:hover {
@@ -57,10 +36,23 @@
       box-shadow: 0 15px 50px -10px rgba(79, 70, 229, 0.6);
     }
     
+    .mic-btn:active {
+      transform: scale(0.98);
+    }
+    
     .mic-btn.recording {
       animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      background: linear-gradient(135deg, var(--danger) 0%, #F87171 100%);
+      background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
       box-shadow: 0 10px 40px -10px rgba(239, 68, 68, 0.5);
+    }
+    
+    .mic-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .mic-btn.disabled:hover {
+      transform: none;
     }
     
     @keyframes pulse-ring {
@@ -74,10 +66,43 @@
       }
     }
     
+    .wave-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .recording .wave-container {
+      opacity: 1;
+    }
+    
+    .wave-bar {
+      width: 3px;
+      height: 20px;
+      background: white;
+      border-radius: 2px;
+      animation: wave 0.5s ease-in-out infinite;
+    }
+    
+    .wave-bar:nth-child(1) { animation-delay: 0s; }
+    .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+    
+    @keyframes wave {
+      0%, 100% { height: 12px; }
+      50% { height: 24px; }
+    }
+    
     .stat-card {
       background: white;
       border-radius: 16px;
-      box-shadow: var(--card-shadow);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       transition: transform 0.2s, box-shadow 0.2s;
     }
     
@@ -147,7 +172,7 @@
     .chart-bar {
       height: 8px;
       border-radius: 4px;
-      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+      background: linear-gradient(90deg, #4F46E5 0%, #818CF8 100%);
       transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
@@ -169,6 +194,8 @@
       opacity: 0;
       transition: all 0.3s;
       z-index: 1000;
+      max-width: 90%;
+      text-align: center;
     }
     
     .toast.show {
@@ -195,13 +222,39 @@
       }
     }
     
-    .scrollbar-hide::-webkit-scrollbar {
-      display: none;
+    .permission-banner {
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
     }
     
-    .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+    .test-btn {
+      background: white;
+      border: 2px solid #4F46E5;
+      color: #4F46E5;
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .test-btn:hover {
+      background: #4F46E5;
+      color: white;
+    }
+    
+    .text-transcript {
+      background: #F3F4F6;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 14px;
+      color: #374151;
+      max-height: 100px;
+      overflow-y: auto;
     }
   </style>
 </head>
@@ -212,6 +265,19 @@
       <h1 class="text-2xl font-bold text-gray-800 mb-1">语音记账</h1>
       <p class="text-gray-500 text-sm">说出金额，一键记账</p>
     </header>
+    
+    <!-- Permission Banner -->
+    <div id="permissionBanner" class="permission-banner hidden">
+      <div class="flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle text-amber-500 mt-1"></i>
+        <div class="flex-1">
+          <p class="text-sm text-amber-800 font-medium mb-2">需要麦克风权限才能使用语音记账</p>
+          <button id="requestPermissionBtn" class="test-btn text-sm py-2 px-4">
+            授予麦克风权限
+          </button>
+        </div>
+      </div>
+    </div>
     
     <!-- Stats Cards -->
     <div class="grid grid-cols-2 gap-3 mb-6">
@@ -236,11 +302,33 @@
     </div>
     
     <!-- Voice Input Section -->
-    <div class="text-center mb-8">
+    <div class="text-center mb-6">
       <button id="micBtn" class="mic-btn focus:outline-none focus:ring-4 focus:ring-indigo-200">
-        <i class="fas fa-microphone text-white text-3xl" id="micIcon"></i>
+        <i class="fas fa-microphone text-white text-3xl absolute" id="micIcon" style="transition: opacity 0.2s;"></i>
+        <div class="wave-container" id="waveContainer">
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+          <div class="wave-bar"></div>
+        </div>
       </button>
       <p class="mt-4 text-gray-500 text-sm" id="statusText">点击麦克风开始说话</p>
+      <div id="transcriptDisplay" class="text-transcript hidden"></div>
+    </div>
+    
+    <!-- Manual Input Section -->
+    <div class="stat-card p-4 mb-6">
+      <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-keyboard text-gray-400"></i>
+        手动输入
+      </h3>
+      <div class="flex gap-2">
+        <input type="text" id="manualInput" placeholder="例如：今天吃饭花了50块" 
+          class="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400">
+        <button id="manualSubmitBtn" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition">
+          添加
+        </button>
+      </div>
     </div>
     
     <!-- Category Stats -->
@@ -304,10 +392,10 @@
     </div>
     
     <div class="flex gap-3">
-      <button id="cancelBtn" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-medium">
+      <button id="cancelBtn" class="flex-1 py-3 rounded-xl bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition">
         取消
       </button>
-      <button id="saveBtn" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-medium">
+      <button id="saveBtn" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition">
         确认保存
       </button>
     </div>
@@ -331,13 +419,13 @@
 
     // 分类关键词
     const CATEGORY_KEYWORDS = {
-      dining: ['吃饭', '餐饮', '早餐', '午餐', '晚餐', '宵夜', '外卖', '奶茶', '咖啡', '饮料', '零食', '水果', '买菜', '超市', '食品'],
-      transport: ['交通', '打车', '地铁', '公交', '开车', '加油', '停车', '火车', '飞机', '高铁', '打车', '滴滴'],
-      shopping: ['购物', '买', '衣服', '鞋子', '包', '化妆品', '护肤', '日用品', '电器', '电子产品'],
-      entertainment: ['娱乐', '电影', '唱歌', '游戏', '旅游', '健身', '运动', '门票', '会员', '视频'],
-      medical: ['医疗', '医院', '药店', '买药', '看病', '检查', '牙医'],
-      housing: ['住房', '房租', '水电', '物业', '装修', '家具'],
-      social: ['人情', '红包', '送礼', '礼物', '请客', '聚餐', 'AA']
+      dining: ['吃饭', '餐饮', '早餐', '午餐', '晚餐', '宵夜', '外卖', '奶茶', '咖啡', '饮料', '零食', '水果', '买菜', '超市', '食品', '面条', '米饭'],
+      transport: ['交通', '打车', '地铁', '公交', '开车', '加油', '停车', '火车', '飞机', '高铁', '滴滴', '出行'],
+      shopping: ['购物', '买', '衣服', '鞋子', '包', '化妆品', '护肤', '日用品', '电器', '电子产品', '网购'],
+      entertainment: ['娱乐', '电影', '唱歌', '游戏', '旅游', '健身', '运动', '门票', '会员', '视频', '音乐'],
+      medical: ['医疗', '医院', '药店', '买药', '看病', '检查', '牙医', '医疗'],
+      housing: ['住房', '房租', '水电', '物业', '装修', '家具', '住宿'],
+      social: ['人情', '红包', '送礼', '礼物', '请客', '聚餐', 'AA', '朋友']
     };
 
     // 全局变量
@@ -345,92 +433,198 @@
     let recognition = null;
     let isRecording = false;
     let currentBill = null;
+    let permissionGranted = false;
+    let audioContext = null;
+    let analyser = null;
 
     // DOM 元素
     const micBtn = document.getElementById('micBtn');
     const micIcon = document.getElementById('micIcon');
+    const waveContainer = document.getElementById('waveContainer');
     const statusText = document.getElementById('statusText');
     const confirmPanel = document.getElementById('confirmPanel');
     const toast = document.getElementById('toast');
+    const permissionBanner = document.getElementById('permissionBanner');
+    const transcriptDisplay = document.getElementById('transcriptDisplay');
+    const manualInput = document.getElementById('manualInput');
+    const manualSubmitBtn = document.getElementById('manualSubmitBtn');
 
     // 初始化
     function init() {
       loadBills();
       renderBillList();
       updateStats();
-      initSpeechRecognition();
+      checkMicrophonePermission();
       bindEvents();
+    }
+
+    // 检查麦克风权限
+    async function checkMicrophonePermission() {
+      try {
+        const result = await navigator.permissions.query({ name: 'microphone' });
+        if (result.state === 'granted') {
+          permissionGranted = true;
+          permissionBanner.classList.add('hidden');
+          initSpeechRecognition();
+        } else if (result.state === 'prompt') {
+          permissionBanner.classList.remove('hidden');
+        } else {
+          permissionBanner.classList.remove('hidden');
+          statusText.textContent = '麦克风权限被拒绝';
+        }
+        
+        result.addEventListener('change', () => {
+          if (result.state === 'granted') {
+            permissionGranted = true;
+            permissionBanner.classList.add('hidden');
+            initSpeechRecognition();
+            showToast('麦克风权限已授予');
+          }
+        });
+      } catch (e) {
+        // 浏览器不支持 permissions API
+        console.log('Permissions API not supported');
+        initSpeechRecognition();
+      }
+    }
+
+    // 请求麦克风权限
+    async function requestMicrophonePermission() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        permissionGranted = true;
+        permissionBanner.classList.add('hidden');
+        initSpeechRecognition();
+        showToast('麦克风权限已授予');
+      } catch (e) {
+        console.error('Microphone permission error:', e);
+        showToast('无法获取麦克风权限，请检查浏览器设置');
+        statusText.textContent = '麦克风权限被拒绝';
+      }
     }
 
     // 加载账单
     function loadBills() {
-      const stored = localStorage.getItem('voiceBills');
-      bills = stored ? JSON.parse(stored) : [];
+      try {
+        const stored = localStorage.getItem('voiceBills');
+        bills = stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        bills = [];
+      }
     }
 
     // 保存账单
     function saveBills() {
-      localStorage.setItem('voiceBills', JSON.stringify(bills));
+      try {
+        localStorage.setItem('voiceBills', JSON.stringify(bills));
+      } catch (e) {
+        showToast('存储空间不足');
+      }
     }
 
     // 初始化语音识别
     function initSpeechRecognition() {
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'zh-CN';
-
-        recognition.onstart = () => {
-          isRecording = true;
-          micBtn.classList.add('recording');
-          micIcon.className = 'fas fa-microphone-slash text-white text-3xl';
-          statusText.textContent = '正在聆听...';
-        };
-
-        recognition.onresult = (event) => {
-          const result = event.results[event.results.length - 1];
-          const transcript = result[0].transcript;
-          
-          if (result.isFinal) {
-            processTranscript(transcript);
-          } else {
-            statusText.textContent = `识别中: ${transcript}`;
-          }
-        };
-
-        recognition.onerror = (event) => {
-          console.error('Speech recognition error:', event.error);
-          stopRecording();
-          if (event.error === 'not-allowed') {
-            showToast('请允许麦克风权限');
-          } else if (event.error === 'no-speech') {
-            showToast('未检测到语音，请重试');
-          }
-        };
-
-        recognition.onend = () => {
-          stopRecording();
-        };
-      } else {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
         statusText.textContent = '当前浏览器不支持语音识别';
-        micBtn.disabled = true;
-        micBtn.classList.opacity = '0.5';
+        statusText.classList.add('text-red-500');
+        showToast('请使用 Chrome、Safari 或 Edge 浏览器');
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'zh-CN';
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        micBtn.classList.add('recording');
+        micIcon.style.opacity = '0';
+        waveContainer.style.opacity = '1';
+        statusText.textContent = '正在聆听，请说话...';
+        transcriptDisplay.classList.add('hidden');
+      };
+
+      recognition.onresult = (event) => {
+        const results = event.results;
+        const lastResult = results[results.length - 1];
+        const transcript = lastResult[0].transcript;
+        
+        // 显示实时识别结果
+        if (!lastResult.isFinal) {
+          transcriptDisplay.textContent = transcript;
+          transcriptDisplay.classList.remove('hidden');
+          statusText.textContent = '识别中...';
+        } else {
+          // 最终结果
+          transcriptDisplay.textContent = transcript;
+          transcriptDisplay.classList.remove('hidden');
+          processTranscript(transcript);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        stopRecording();
+        
+        switch (event.error) {
+          case 'not-allowed':
+            showToast('请允许麦克风权限');
+            permissionBanner.classList.remove('hidden');
+            break;
+          case 'no-speech':
+            showToast('未检测到语音，请重试');
+            break;
+          case 'network':
+            showToast('网络错误，请检查网络连接');
+            break;
+          case 'audio-capture':
+            showToast('找不到麦克风设备');
+            break;
+          default:
+            showToast('语音识别出错，请重试');
+        }
+      };
+
+      recognition.onend = () => {
+        stopRecording();
+      };
+
+      // 尝试自动启动一次来触发权限请求（仅在用户交互后）
+      try {
+        recognition.start();
+        recognition.stop();
+      } catch (e) {
+        // 忽略
       }
     }
 
     // 处理语音转文字
     function processTranscript(text) {
+      if (!text || text.trim() === '') {
+        showToast('未识别到内容，请重试');
+        return;
+      }
+      
       statusText.textContent = '正在智能解析...';
       
-      // 模拟 AI 解析延迟
       setTimeout(() => {
         const bill = parseBillText(text);
         currentBill = bill;
+        
+        if (bill.amount <= 0) {
+          showToast('未识别到金额，请说清楚花了多少钱');
+          statusText.textContent = '点击麦克风开始说话';
+          return;
+        }
+        
         showConfirmPanel(bill);
         statusText.textContent = '点击麦克风开始说话';
-      }, 500);
+      }, 300);
     }
 
     // AI 智能解析
@@ -445,24 +639,28 @@
         createdAt: Date.now()
       };
 
-      // 提取金额 - 匹配各种格式
+      // 清理文本
+      const cleanText = text.trim().toLowerCase();
+
+      // 提取金额 - 按优先级匹配
       const amountPatterns = [
-        /([0-9]+(?:点[0-9]+)?(?:块|元))(?!.*[0-9])/g,  // "100块"、"50元"
-        /([0-9]+(?:点[0-9]+)?(?:块|元))/g,
+        // 小数金额：50.5、100.00
+        /([0-9]+\.[0-9]{1,2})/g,
+        // 带单位：100块、50元、100块钱
+        /([0-9]+)\s*(?:块(?:钱)?|元(?:钱)?|块?钱)/g,
+        // ¥符号：¥100
         /¥\s*([0-9]+(?:\.[0-9]{1,2})?)/g,
-        /RMB\s*([0-9]+(?:\.[0-9]{1,2})?)/g,
-        /([0-9]+(?:\.[0-9]{1,2})?)\s*(?:块|元)/g,
-        /([0-9]+)\s*块/g,
-        /([0-9]+)\s*元/g
+        // 纯数字
+        /([0-9]+)/g
       ];
 
       for (const pattern of amountPatterns) {
         const matches = text.match(pattern);
-        if (matches) {
-          const lastMatch = matches[matches.length - 1];
-          const numStr = lastMatch.replace(/[^0-9.]/g, '');
+        if (matches && matches.length > 0) {
+          // 取最后一个匹配作为金额
+          let numStr = matches[matches.length - 1].replace(/[^0-9.]/g, '');
           const amount = parseFloat(numStr);
-          if (amount > 0 && amount < 1000000) {
+          if (!isNaN(amount) && amount > 0 && amount < 1000000) {
             bill.amount = amount;
             break;
           }
@@ -472,14 +670,27 @@
       // 特殊金额词组
       if (bill.amount === 0) {
         const specialAmounts = {
-          '一块': 1, '一块钱': 1, '十块': 10, '十块钱': 10,
-          '二十': 20, '二十块': 20, '三十': 30, '三十块': 30,
-          '五十': 50, '五十块': 50, '一百': 100, '一百块': 100,
-          '两百': 200, '两百块': 200, '五百': 500, '五百块': 500,
-          '一千': 1000, '一千块': 1000
+          '一块': 1, '一块钱': 1, '十块': 10, '十块钱': 10, '十元': 10,
+          '二十': 20, '二十块': 20, '二十元': 20,
+          '三十': 30, '三十块': 30, '三十元': 30,
+          '四十': 40, '四十块': 40,
+          '五十': 50, '五十块': 50, '五十元': 50,
+          '六十': 60, '六十块': 60,
+          '七十': 70, '七十块': 70,
+          '八十': 80, '八十块': 80,
+          '九十': 90, '九十块': 90,
+          '一百': 100, '一百块': 100, '一百元': 100, '壹佰': 100,
+          '两百': 200, '两百块': 200, '两百元': 200,
+          '三百': 300, '三百块': 300,
+          '五百': 500, '五百块': 500, '五百元': 500,
+          '一千': 1000, '一千块': 1000, '一千元': 1000, '壹仟': 1000,
+          '两千': 2000, '两千块': 2000,
+          '五千': 5000, '五千块': 5000,
+          '一万': 10000, '一万块': 10000
         };
+        
         for (const [word, value] of Object.entries(specialAmounts)) {
-          if (text.includes(word)) {
+          if (cleanText.includes(word) || text.includes(word)) {
             bill.amount = value;
             break;
           }
@@ -505,17 +716,14 @@
           const day = parseInt(dateMatch[2]);
           const now = new Date();
           let year = now.getFullYear();
-          if (month < now.getMonth() + 1 && month > now.getMonth() + 1) {
-            year = month > now.getMonth() + 1 ? year - 1 : year;
-          }
           bill.date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         }
       }
 
-      // 提取分类
+      // 提取分类 - 按优先级匹配
       for (const [type, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
         for (const keyword of keywords) {
-          if (text.includes(keyword)) {
+          if (cleanText.includes(keyword) || text.includes(keyword)) {
             bill.type = type;
             break;
           }
@@ -523,28 +731,66 @@
         if (bill.type !== 'other') break;
       }
 
-      // 提取备注（去除金额、日期、分类后的剩余部分）
+      // 提取备注（去除金额、日期后的剩余部分）
       let note = text
-        .replace(/[0-9]+(?:点[0-9]+)?(?:块|元)/g, '')
+        .replace(/[0-9]+\.[0-9]{1,2}/g, '')
+        .replace(/[0-9]+\s*(?:块(?:钱)?|元(?:钱)?|块?钱)/g, '')
         .replace(/¥\s*[0-9]+(?:\.[0-9]{1,2})?/g, '')
-        .replace(/(今天|昨天|前天|[0-9]+月[0-9]+号?)/g, '')
-        .replace(/吃饭|交通|购物|娱乐|医疗|住房|人情|其他/g, '')
+        .replace(/[0-9]+\s*块/g, '')
+        .replace(/[0-9]+\s*元/g, '')
+        .replace(/(今天|昨天|前天|[0-9]+月[0-9]+号?|[0-9]+号)/g, '')
+        .replace(/吃饭|交通|购物|娱乐|医疗|住房|人情|其他|花|用了|消费|支出|买了|购买/g, '')
         .trim();
       
-      // 过滤掉纯数字
-      note = note.replace(/^[0-9\s]+$/g, '').trim();
-      if (note && note.length > 0) {
+      // 过滤掉纯数字和空字符
+      note = note.replace(/^[0-9\s.,，。、]+$/g, '').trim();
+      if (note && note.length > 0 && note.length < 50) {
         bill.note = note;
       }
 
       return bill;
     }
 
+    // 开始录音
+    function startRecording() {
+      if (!recognition) {
+        showToast('语音识别未初始化');
+        return;
+      }
+      
+      if (isRecording) {
+        stopRecording();
+        return;
+      }
+
+      try {
+        recognition.start();
+      } catch (e) {
+        console.error('Start recognition error:', e);
+        // 如果已经在运行，先停止再启动
+        try {
+          recognition.stop();
+          setTimeout(() => recognition.start(), 100);
+        } catch (e2) {
+          showToast('无法启动语音识别');
+        }
+      }
+    }
+
     // 停止录音
     function stopRecording() {
       isRecording = false;
       micBtn.classList.remove('recording');
-      micIcon.className = 'fas fa-microphone text-white text-3xl';
+      micIcon.style.opacity = '1';
+      waveContainer.style.opacity = '0';
+      
+      if (recognition) {
+        try {
+          recognition.stop();
+        } catch (e) {
+          // 忽略
+        }
+      }
     }
 
     // 显示确认面板
@@ -576,6 +822,7 @@
     function hideConfirmPanel() {
       confirmPanel.classList.remove('show');
       currentBill = null;
+      transcriptDisplay.classList.add('hidden');
     }
 
     // 保存账单
@@ -586,10 +833,33 @@
         renderBillList();
         updateStats();
         hideConfirmPanel();
+        transcriptDisplay.classList.add('hidden');
         showToast('记账成功！');
       } else {
         showToast('请先说清楚金额');
       }
+    }
+
+    // 手动添加账单
+    function addManualBill() {
+      const text = manualInput.value.trim();
+      if (!text) {
+        showToast('请输入记账内容');
+        return;
+      }
+      
+      const bill = parseBillText(text);
+      if (bill.amount <= 0) {
+        showToast('未识别到金额，请说清楚花了多少钱');
+        return;
+      }
+      
+      bills.unshift(bill);
+      saveBills();
+      renderBillList();
+      updateStats();
+      manualInput.value = '';
+      showToast('记账成功！');
     }
 
     // 删除账单
@@ -650,7 +920,7 @@
             <div class="text-right">
               <div class="font-semibold text-gray-800">-¥${bill.amount.toFixed(2)}</div>
             </div>
-            <button onclick="deleteBill(${bill.id})" class="delete-btn absolute right-2 top-2 w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200">
+            <button onclick="deleteBill(${bill.id})" class="delete-btn absolute right-2 top-2 w-6 h-6 rounded-full bg-red-100 text-red-500 flex items-center justify-center hover:bg-red-200 transition">
               <i class="fas fa-times text-xs"></i>
             </button>
           </div>
@@ -726,35 +996,39 @@
       toast.classList.add('show');
       setTimeout(() => {
         toast.classList.remove('show');
-      }, 2000);
+      }, 2500);
     }
 
     // 绑定事件
     function bindEvents() {
-      micBtn.addEventListener('click', () => {
-        if (isRecording) {
-          recognition.stop();
-        } else {
-          if (recognition) {
-            try {
-              recognition.start();
-            } catch (e) {
-              console.error('Recognition start error:', e);
-            }
-          } else {
-            showToast('当前浏览器不支持语音识别');
-          }
-        }
-      });
+      // 麦克风按钮
+      micBtn.addEventListener('click', startRecording);
       
+      // 权限请求按钮
+      document.getElementById('requestPermissionBtn').addEventListener('click', requestMicrophonePermission);
+      
+      // 确认面板按钮
       document.getElementById('cancelBtn').addEventListener('click', hideConfirmPanel);
       document.getElementById('saveBtn').addEventListener('click', saveBill);
+      
+      // 手动输入
+      manualSubmitBtn.addEventListener('click', addManualBill);
+      manualInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          addManualBill();
+        }
+      });
       
       // 点击外部关闭确认面板
       confirmPanel.addEventListener('click', (e) => {
         if (e.target === confirmPanel) {
           hideConfirmPanel();
         }
+      });
+      
+      // 阻止确认面板内的点击冒泡
+      confirmPanel.querySelectorAll('button, input').forEach(el => {
+        el.addEventListener('click', (e) => e.stopPropagation());
       });
     }
 
