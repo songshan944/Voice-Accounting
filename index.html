@@ -91,6 +91,12 @@
             <option value="medical">🏥 医疗</option>
             <option value="housing">🏠 住房</option>
             <option value="social">❤️ 人情</option>
+            <option value="education">📚 学习</option>
+            <option value="digital">📱 数码订阅</option>
+            <option value="pet">🐾 宠物</option>
+            <option value="beauty">💄 美妆护理</option>
+            <option value="travel">✈️ 旅行</option>
+            <option value="communication">📞 通讯</option>
             <option value="other">📦 其他</option>
           </select>
         </div>
@@ -140,6 +146,14 @@
         <p class="text-gray-300 text-xs mt-1">在上方输入记账内容开始记录</p>
       </div>
     </div>
+
+    <!-- Pie Chart Section -->
+    <div class="bg-white rounded-2xl p-5 shadow-sm mb-6" id="pieChartSection">
+      <h3 class="text-sm font-semibold text-gray-700 mb-4">🥧 支出分类占比</h3>
+      <div id="pieChartContainer" class="flex flex-col items-center">
+        <!-- 动态生成饼图 -->
+      </div>
+    </div>
   </div>
   
   <!-- Toast -->
@@ -154,48 +168,102 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     
-    .category-dining { background: #FEF3C7; }
-    .category-transport { background: #DBEAFE; }
-    .category-shopping { background: #FCE7F3; }
-    .category-entertainment { background: #E9D5FF; }
-    .category-medical { background: #FEE2E2; }
-    .category-housing { background: #D1FAE5; }
-    .category-social { background: #FFEDD5; }
-    .category-other { background: #F3F4F6; }
-    
-    .type-dining { background: #FEF3C7; color: #D97706; }
-    .type-transport { background: #DBEAFE; color: #2563EB; }
-    .type-shopping { background: #FCE7F3; color: #DB2777; }
-    .type-entertainment { background: #E9D5FF; color: #9333EA; }
-    .type-medical { background: #FEE2E2; color: #DC2626; }
-    .type-housing { background: #D1FAE5; color: #059669; }
-    .type-social { background: #FFEDD5; color: #EA580C; }
-    .type-other { background: #F3F4F6; color: #6B7280; }
-    
     .chart-bar {
       height: 6px;
       border-radius: 3px;
-      background: linear-gradient(90deg, #4F46E5 0%, #818CF8 100%);
       transition: width 0.5s ease;
     }
     
     .toast-show {
       opacity: 1 !important;
     }
+
+    /* 饼图样式 */
+    .pie-chart {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      position: relative;
+      margin-bottom: 20px;
+    }
+
+    .pie-chart-inner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      height: 110px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pie-chart-inner .amount {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1F2937;
+    }
+
+    .pie-chart-inner .label {
+      font-size: 10px;
+      color: #9CA3AF;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      width: 100%;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .legend-text {
+      flex: 1;
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .legend-value {
+      font-size: 13px;
+      color: #6B7280;
+      font-weight: 500;
+    }
   </style>
 
   <script>
-    // 分类配置
+    // 分类配置 - 包含完整颜色定义
     const CATEGORIES = {
-      dining: { name: '餐饮', icon: 'fa-utensils' },
-      transport: { name: '交通', icon: 'fa-car' },
-      shopping: { name: '购物', icon: 'fa-shopping-bag' },
-      entertainment: { name: '娱乐', icon: 'fa-gamepad' },
-      medical: { name: '医疗', icon: 'fa-hospital' },
-      housing: { name: '住房', icon: 'fa-home' },
-      social: { name: '人情', icon: 'fa-heart' },
-      other: { name: '其他', icon: 'fa-ellipsis-h' }
+      dining: { name: '餐饮', icon: 'fa-utensils', color: '#D97706', softBg: '#FEF3C7', textColor: '#D97706' },
+      transport: { name: '交通', icon: 'fa-car', color: '#2563EB', softBg: '#DBEAFE', textColor: '#2563EB' },
+      shopping: { name: '购物', icon: 'fa-shopping-bag', color: '#DB2777', softBg: '#FCE7F3', textColor: '#DB2777' },
+      entertainment: { name: '娱乐', icon: 'fa-gamepad', color: '#9333EA', softBg: '#E9D5FF', textColor: '#9333EA' },
+      medical: { name: '医疗', icon: 'fa-hospital', color: '#DC2626', softBg: '#FEE2E2', textColor: '#DC2626' },
+      housing: { name: '住房', icon: 'fa-home', color: '#059669', softBg: '#D1FAE5', textColor: '#059669' },
+      social: { name: '人情', icon: 'fa-heart', color: '#EA580C', softBg: '#FFEDD5', textColor: '#EA580C' },
+      education: { name: '学习', icon: 'fa-graduation-cap', color: '#7C3AED', softBg: '#EDE9FE', textColor: '#7C3AED' },
+      digital: { name: '数码订阅', icon: 'fa-mobile-alt', color: '#0891B2', softBg: '#CFFAFE', textColor: '#0891B2' },
+      pet: { name: '宠物', icon: 'fa-paw', color: '#CA8A04', softBg: '#FEF9C3', textColor: '#CA8A04' },
+      beauty: { name: '美妆护理', icon: 'fa-spa', color: '#EC4899', softBg: '#FCE7F3', textColor: '#EC4899' },
+      travel: { name: '旅行', icon: 'fa-plane', color: '#0D9488', softBg: '#CCFBF1', textColor: '#0D9488' },
+      communication: { name: '通讯', icon: 'fa-phone', color: '#4B5563', softBg: '#F3F4F6', textColor: '#4B5563' },
+      other: { name: '其他', icon: 'fa-ellipsis-h', color: '#6B7280', softBg: '#F3F4F6', textColor: '#6B7280' }
     };
+
+    // 获取分类信息（带安全回退）
+    function getCategory(type) {
+      return CATEGORIES[type] || CATEGORIES.other;
+    }
 
     // 全局变量
     let bills = [];
@@ -281,6 +349,11 @@
 
     // 显示预览
     function showPreview(data) {
+      // 安全回退未知分类
+      if (!CATEGORIES[data.type]) {
+        data.type = 'other';
+      }
+
       currentBill = {
         id: Date.now(),
         ...data,
@@ -380,16 +453,16 @@
       emptyState.classList.add('hidden');
 
       billList.innerHTML = bills.map(bill => {
-        const category = CATEGORIES[bill.type];
+        const category = getCategory(bill.type);
         return `
           <div class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow relative group">
             <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-xl category-${bill.type} flex items-center justify-center">
-                <i class="fas ${category.icon} text-lg"></i>
+              <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background-color: ${category.softBg}">
+                <i class="${category.icon} text-lg" style="color: ${category.color}"></i>
               </div>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2">
-                  <span class="type-${bill.type} px-2.5 py-1 rounded-full text-xs font-medium">${category.name}</span>
+                  <span class="px-2.5 py-1 rounded-full text-xs font-medium" style="background-color: ${category.softBg}; color: ${category.textColor}">${category.name}</span>
                   ${bill.note ? `<span class="text-xs text-gray-400 truncate max-w-[80px]">${bill.note}</span>` : ''}
                 </div>
                 <div class="text-xs text-gray-400 mt-1">${formatDate(bill.date)}</div>
@@ -416,6 +489,7 @@
       let monthTotal = 0;
       const categoryStats = {};
 
+      // 初始化所有分类的统计数据
       Object.keys(CATEGORIES).forEach(type => {
         categoryStats[type] = { amount: 0, count: 0 };
       });
@@ -427,9 +501,11 @@
         if (bill.createdAt >= monthStart) {
           monthTotal += bill.amount;
         }
-        if (categoryStats[bill.type]) {
-          categoryStats[bill.type].amount += bill.amount;
-          categoryStats[bill.type].count++;
+        // 使用安全回退获取分类
+        const type = CATEGORIES[bill.type] ? bill.type : 'other';
+        if (categoryStats[type]) {
+          categoryStats[type].amount += bill.amount;
+          categoryStats[type].count++;
         }
       });
 
@@ -448,16 +524,16 @@
           const percentage = (stats.amount / maxAmount * 100).toFixed(0);
           return `
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg category-${type} flex items-center justify-center flex-shrink-0">
-                <i class="fas ${category.icon} text-sm"></i>
+              <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: ${category.softBg}">
+                <i class="${category.icon} text-sm" style="color: ${category.color}"></i>
               </div>
               <div class="flex-1">
                 <div class="flex justify-between text-xs mb-1.5">
-                  <span class="text-gray-600 font-medium">${category.name}</span>
+                  <span class="font-medium" style="color: ${category.textColor}">${category.name}</span>
                   <span class="text-gray-500">¥${stats.amount.toFixed(2)} (${stats.count}笔)</span>
                 </div>
                 <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div class="chart-bar" style="width: ${percentage}%"></div>
+                  <div class="h-full rounded-full" style="width: ${percentage}%; background: linear-gradient(90deg, ${category.color}, ${category.softBg})"></div>
                 </div>
               </div>
             </div>
@@ -465,6 +541,76 @@
         }).join('');
 
       categoryList.innerHTML = categoriesHtml || '<p class="text-gray-400 text-sm text-center py-4">暂无分类数据</p>';
+
+      // 渲染饼图
+      renderPieChart(categoryStats, monthTotal);
+    }
+
+    // 渲染饼图
+    function renderPieChart(categoryStats, totalAmount) {
+      const container = document.getElementById('pieChartContainer');
+      
+      // 计算有数据的分类
+      const chartData = Object.entries(categoryStats)
+        .filter(([_, stats]) => stats.amount > 0)
+        .map(([type, stats]) => {
+          const category = CATEGORIES[type];
+          const percentage = totalAmount > 0 ? (stats.amount / totalAmount * 100) : 0;
+          return {
+            type,
+            name: category.name,
+            amount: stats.amount,
+            percentage,
+            color: category.color,
+            softBg: category.softBg
+          };
+        })
+        .sort((a, b) => b.amount - a.amount);
+
+      if (chartData.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 text-center">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+              <i class="fas fa-chart-pie text-gray-300 text-2xl"></i>
+            </div>
+            <p class="text-gray-400 text-sm">暂无支出数据，记一笔试试</p>
+          </div>
+        `;
+        return;
+      }
+
+      // 生成 conic-gradient 饼图
+      let gradientStops = [];
+      let currentAngle = 0;
+      
+      chartData.forEach(item => {
+        const angle = (item.percentage / 100) * 360;
+        gradientStops.push(`${item.color} ${currentAngle}deg ${currentAngle + angle}deg`);
+        currentAngle += angle;
+      });
+
+      const gradient = `conic-gradient(${gradientStops.join(', ')})`;
+
+      // 生成图例
+      const legendHtml = chartData.map(item => `
+        <div class="legend-item">
+          <div class="legend-color" style="background-color: ${item.color}"></div>
+          <span class="legend-text">${item.name}</span>
+          <span class="legend-value">¥${item.amount.toFixed(2)} (${item.percentage.toFixed(1)}%)</span>
+        </div>
+      `).join('');
+
+      container.innerHTML = `
+        <div class="pie-chart" style="background: ${gradient}">
+          <div class="pie-chart-inner">
+            <span class="amount">¥${totalAmount.toFixed(0)}</span>
+            <span class="label">总支出</span>
+          </div>
+        </div>
+        <div class="w-full max-w-xs">
+          ${legendHtml}
+        </div>
+      `;
     }
 
     // 显示提示
